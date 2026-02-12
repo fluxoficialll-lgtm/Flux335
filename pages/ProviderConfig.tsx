@@ -7,7 +7,6 @@ import ProviderSettingsModal from '../components/financial/ProviderSettingsModal
 import { paypalService } from '../services/paypalService';
 import { stripeService } from '../services/stripeService';
 import { syncPayService } from '../services/syncPayService';
-import { apiClient } from '../services/apiClient';
 import './ProviderConfig.css';
 import { providers } from '../constants/providerData';
 import { ProviderListItem } from '../components/financial/ProviderListItem';
@@ -117,8 +116,6 @@ export const ProviderConfig: React.FC = () => {
       if (!selectedProvider) return;
 
       try {
-          await apiClient.post('/financial/disconnect-provider', { provider: selectedProvider });
-
           let success = false;
           switch (selectedProvider) {
               case 'paypal':

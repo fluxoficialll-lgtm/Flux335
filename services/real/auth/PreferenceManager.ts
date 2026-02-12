@@ -1,76 +1,81 @@
 
-import { NotificationSettings, PaymentProviderConfig, SecuritySettings } from '../../../types';
+import { apiClient } from '../../apiClient';
 import { db } from '../../../database';
-import { API_BASE } from '../../../apiConfig';
+import { User, PaymentProviderConfig, NotificationSettings, SecuritySettings } from '../../../types';
 
-const API_USERS = `${API_BASE}/api/users`;
-
+// Gerencia as preferências e configurações do usuário
 export const PreferenceManager = {
-  async updateNotificationSettings(email: string, settings: NotificationSettings) {
-      const response = await fetch(`${API_USERS}/update`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, updates: { notificationSettings: settings } })
-      });
-      const data = await response.json();
-      if (response.ok && data.user) {
-          db.users.set(data.user);
-          localStorage.setItem('cached_user_profile', JSON.stringify(data.user));
-      }
-  },
 
-  async updateSecuritySettings(email: string, settings: SecuritySettings) {
-      const response = await fetch(`${API_USERS}/update`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, updates: { securitySettings: settings } })
-      });
-      const data = await response.json();
-      if (response.ok && data.user) {
-          db.users.set(data.user);
-          localStorage.setItem('cached_user_profile', JSON.stringify(data.user));
-      }
-  },
+    // Atualiza as configurações de notificação
+    async updateNotificationSettings(email: string, settings: NotificationSettings): Promise<void> {
+        const user = await db.users.getByEmail(email);
+        if (!user) throw new Error("User not found");
 
-  /**
-   * Atualiza as configurações de pagamento com MERGE DIRETO NO BANCO
-   * Não depende mais do db.users.get(email) local para iniciar
-   */
-  async updatePaymentConfig(email: string, config: PaymentProviderConfig) {
-      if (!email) throw new Error("E-mail do usuário não identificado.");
+        const updatedSettings = { ...user.notificationSettings, ...settings };
+        await db.users.update(user.id, { notificationSettings: updatedSettings });
 
-      // 1. Prepara o payload de atualização
-      // Buscamos o estado atual direto do banco para o merge via backend
-      // No front, apenas enviamos o que queremos mudar
-      const updates: any = {
-          paymentConfig: config.isConnected ? config : undefined
-      };
+        // Sincroniza com o backend
+        await apiClient.post('/users/update-settings', { email, notificationSettings: updatedSettings });
+    },
 
-      // 2. Persiste no PostgreSQL (Fonte da Verdade)
-      const response = await fetch(`${API_USERS}/update`, { 
-          method: 'PUT', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ 
-              email: email.toLowerCase().trim(), 
-              updates 
-          }) 
-      });
+    // Atualiza as configurações de segurança
+    async updateSecuritySettings(email: string, settings: SecuritySettings): Promise<void> {
+        const user = await db.users.getByEmail(email);
+        if (!user) throw new Error("User not found");
 
-      if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || "Falha ao sincronizar chaves com o servidor.");
-      }
+        const updatedSettings = { ...user.securitySettings, ...settings };
+        await db.users.update(user.id, { securitySettings: updatedSettings });
 
-      const result = await response.json();
+        // Sincroniza com o backend
+        await apiClient.post('/users/update-settings', { email, securitySettings: updatedSettings });
+    },
 
-      // 3. HIDRATAÇÃO DO CACHE: Atualiza o LocalStorage com o retorno real do PostgreSQL
-      if (result.user) {
-          db.users.set(result.user);
-          localStorage.setItem('cached_user_profile', JSON.stringify(result.user));
-          localStorage.setItem('user_id', result.user.id);
-      }
-      
-      // Notifica o restante do app sobre a mudança de estado (botões, badges, etc)
-      window.dispatchEvent(new Event('storage'));
-  }
+    // Atualiza a configuração de um provedor de pagamento
+    async updatePaymentConfig(email: string, config: PaymentProviderConfig): Promise<User> {
+        if (!config.providerId) throw new Error("Provider ID is required");
+
+        const user = await db.users.getByEmail(email);
+        if (!user) throw new Error("User not found");
+
+        // Garante que o objeto de configs exista
+        const paymentConfigs = user.paymentConfigs || {};
+        paymentConfigs[config.providerId] = config;
+
+        // Atualiza o banco de dados local
+        await db.users.update(user.id, { paymentConfigs });
+
+        // Sincroniza com o backend (API)
+        try {
+            await apiClient.post('/users/update-payment-config', { email, paymentConfigs });
+        } catch (error) {
+            console.error("API Error: Failed to sync payment config. Changes saved locally.", error);
+            // Opcional: Implementar lógica de fallback ou retry
+        }
+        
+        // Retorna o usuário atualizado para refletir no cache da aplicação
+        const updatedUser = await db.users.get(user.id);
+        return updatedUser!;
+    },
+
+    // Deleta a configuração de um provedor de pagamento
+    async deletePaymentProvider(email: string, providerId: string): Promise<User> {
+        const user = await db.users.getByEmail(email);
+        if (!user) throw new Error("User not found");
+
+        const paymentConfigs = user.paymentConfigs || {};
+        if (paymentConfigs[providerId]) {
+            delete paymentConfigs[providerId];
+
+            await db.users.update(user.id, { paymentConfigs });
+
+            try {
+                await apiClient.post('/users/update-payment-config', { email, paymentConfigs });
+            } catch (error) {
+                console.error("API Error: Failed to sync payment config deletion.", error);
+            }
+        }
+        
+        const updatedUser = await db.users.get(user.id);
+        return updatedUser!;
+    }
 };

@@ -5,6 +5,7 @@ import { authService } from '../services/authService';
 import { SyncPayForm } from '../components/payments/providers/SyncPayForm';
 import { StripeForm } from '../components/payments/providers/StripeForm';
 import { PayPalForm } from '../components/payments/providers/PayPalForm';
+import ProviderSettingsModal from '../components/financial/ProviderSettingsModal';
 
 interface ProviderData {
     id: string;
@@ -20,6 +21,8 @@ export const ProviderConfig: React.FC = () => {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [connectedProviders, setConnectedProviders] = useState<Set<string>>(new Set());
   const hasInitialized = useRef(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
 
   const providers: ProviderData[] = useMemo(() => [
       {
@@ -69,21 +72,18 @@ export const ProviderConfig: React.FC = () => {
           if (user) {
               const connected = new Set<string>();
               
-              // Verifica mapa de provedores múltiplos
               if (user.paymentConfigs) {
                   Object.values(user.paymentConfigs).forEach(conf => {
                       if (conf.isConnected) connected.add(conf.providerId);
                   });
               }
               
-              // Legado/Fallback
               if (user.paymentConfig && user.paymentConfig.isConnected) {
                   connected.add(user.paymentConfig.providerId);
               }
 
               setConnectedProviders(connected);
               
-              // Inicializa apenas no primeiro load
               if (!hasInitialized.current) {
                 if (connected.size > 0) {
                     setExpanded(Array.from(connected)[0]);
@@ -103,7 +103,6 @@ export const ProviderConfig: React.FC = () => {
           if (connected) next.add(providerId);
           else {
               next.delete(providerId);
-              // Se desconectou, fecha o card
               if (expanded === providerId) setExpanded(null);
           }
           return next;
@@ -121,6 +120,11 @@ export const ProviderConfig: React.FC = () => {
           navigate('/financial');
       }
   };
+  
+  const openSettingsModal = (providerId: string) => {
+      setSelectedProvider(providerId);
+      setIsModalOpen(true);
+  };
 
   const connectedList = providers.filter(p => connectedProviders.has(p.id));
   const disconnectedList = providers.filter(p => !connectedProviders.has(p.id));
@@ -132,8 +136,8 @@ export const ProviderConfig: React.FC = () => {
 
     return (
         <div key={provider.id} className={`provider-card ${provider.isPrimary ? 'primary' : ''} ${isConnected ? 'connected' : ''}`} style={{ opacity: isSoon ? 0.6 : 1 }}>
-            <div className="provider-header" onClick={() => !isSoon && toggleProvider(provider.id)}>
-                <div className="provider-info">
+            <div className="provider-header" >
+                <div className="provider-info" onClick={() => !isSoon && toggleProvider(provider.id)}>
                     <div className="provider-icon" style={{ filter: isSoon ? 'grayscale(100%)' : 'none' }}>
                         <i className={`fa-solid ${provider.icon}`}></i>
                     </div>
@@ -153,7 +157,12 @@ export const ProviderConfig: React.FC = () => {
                         {isSoon && <span className="badge-soon">Em Breve</span>}
                     </div>
                 </div>
-                {!isSoon && <i className={`fa-solid fa-chevron-down arrow-icon ${isExpanded ? 'expanded' : ''}`}></i>}
+                <div className="flex items-center">
+                    {!isSoon && <i className={`fa-solid fa-chevron-down arrow-icon ${isExpanded ? 'expanded' : ''}`} onClick={() => !isSoon && toggleProvider(provider.id)}></i>}
+                    <button onClick={() => openSettingsModal(provider.id)} className="ml-4 text-gray-400 hover:text-white">
+                        <i className="fa-solid fa-ellipsis-v"></i>
+                    </button>
+                </div>
             </div>
             
             {isExpanded && !isSoon && (
@@ -205,7 +214,7 @@ export const ProviderConfig: React.FC = () => {
         }
         .provider-header:hover { background: rgba(255,255,255,0.03); }
 
-        .provider-info { display: flex; align-items: center; gap: 15px; }
+        .provider-info { display: flex; align-items: center; gap: 15px; flex-grow: 1; }
         .provider-icon {
             width: 44px; height: 44px; border-radius: 12px;
             background: #1a1e26; color: #00c2ff;
@@ -284,6 +293,19 @@ export const ProviderConfig: React.FC = () => {
             </p>
         </div>
       </main>
+      <ProviderSettingsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onUpdate={() => { /* Lógica de atualização */ }}
+        onSave={() => { /* Lógica de salvar */ }}
+        onDelete={() => { /* Lógica de apagar */ }}
+        onDisconnect={() => { 
+            if(selectedProvider) {
+                handleStatusChange(selectedProvider, false);
+                setIsModalOpen(false);
+            }
+         }}
+      />
     </div>
   );
 };

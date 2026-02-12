@@ -57,12 +57,16 @@ export const authService = {
   updatePaymentConfig: (c: PaymentProviderConfig) => {
       const email = authService.getCurrentUserEmail();
       if (!email) {
-          // Fallback: Tenta pegar o e-mail do perfil cacheado se o getter direto falhar
           const cached = authService.getCurrentUser();
           if (cached?.email) return PreferenceManager.updatePaymentConfig(cached.email, c);
           throw new Error("Usuário não identificado para salvar configuração.");
       }
       return PreferenceManager.updatePaymentConfig(email, c);
+  },
+  deletePaymentProvider: (providerId: string) => {
+      const email = authService.getCurrentUserEmail();
+      if (!email) throw new Error("Usuário não autenticado.");
+      return PreferenceManager.deletePaymentProvider(email, providerId);
   },
 
   // Helpers de Sessão
@@ -79,7 +83,6 @@ export const authService = {
   },
 
   logout: () => { 
-      // Limpeza profunda de todos os vestígios de cache
       ['user_id', 'auth_token', 'cached_user_profile', 'guest_email_capture', 'flux_instance_id'].forEach(k => localStorage.removeItem(k));
       db.auth.clearSession();
       sessionStorage.clear();

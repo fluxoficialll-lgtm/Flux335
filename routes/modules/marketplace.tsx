@@ -1,6 +1,5 @@
 
 import React, { lazy } from 'react';
-import { Route } from 'react-router-dom';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 
 const Marketplace = lazy(() => import('../../pages/Marketplace').then(m => ({ default: m.Marketplace })));
@@ -12,17 +11,13 @@ const CampaignPerformance = lazy(() => import('../../pages/CampaignPerformance')
 const AdCampaignTypeSelector = lazy(() => import('../../pages/AdCampaignTypeSelector').then(m => ({ default: m.AdCampaignTypeSelector })));
 const AdContentSelector = lazy(() => import('../../pages/AdContentSelector').then(m => ({ default: m.AdContentSelector })));
 
-const MarketplaceRoutes = () => (
-  <>
-    <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
-    <Route path="/marketplace/product/:id" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
-    <Route path="/create-marketplace-item" element={<ProtectedRoute><CreateMarketplaceItem /></ProtectedRoute>} />
-    <Route path="/my-store" element={<ProtectedRoute><MyStore /></ProtectedRoute>} />
-    <Route path="/ad-placement-selector" element={<ProtectedRoute><AdPlacementSelector /></ProtectedRoute>} />
-    <Route path="/campaign-performance/:id" element={<ProtectedRoute><CampaignPerformance /></ProtectedRoute>} />
-    <Route path="/ad-type-selector" element={<ProtectedRoute><AdCampaignTypeSelector /></ProtectedRoute>} />
-    <Route path="/ad-content-selector" element={<ProtectedRoute><AdContentSelector /></ProtectedRoute>} />
-  </>
-);
-
-export default MarketplaceRoutes;
+export const marketplaceRoutes = [
+  { path: '/marketplace', element: <ProtectedRoute><Marketplace /></ProtectedRoute> },
+  { path: '/marketplace/product/:id', element: <ProtectedRoute><ProductDetails /></ProtectedRoute> },
+  { path: '/create-marketplace-item', element: <ProtectedRoute><CreateMarketplaceItem /></ProtectedRoute> },
+  { path: '/my-store', element: <ProtectedRoute><MyStore /></ProtectedRoute> },
+  { path: '/ad-placement-selector', element: <ProtectedRoute><AdPlacementSelector /></ProtectedRoute> },
+  { path: '/campaign-performance/:id', element: <ProtectedRoute><CampaignPerformance /></ProtectedRoute> },
+  { path: '/ad-type-selector', element: <ProtectedRoute><AdCampaignTypeSelector /></ProtectedRoute> },
+  { path: '/ad-content-selector', element: <ProtectedRoute><AdContentSelector /></ProtectedRoute> }
+];

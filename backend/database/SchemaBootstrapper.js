@@ -15,6 +15,7 @@ import { relationshipsSchema } from './schemas/relationships.js';
 import { reportsSchema } from './schemas/reports.js';
 import { interactionsSchema } from './schemas/interactions.js';
 import { auditSchema } from './schemas/audit.js';
+import { settingsSchema } from './schemas/settings.js'; // <-- Adicionado
 
 export const SchemaBootstrapper = {
     /**
@@ -32,7 +33,8 @@ export const SchemaBootstrapper = {
                 usersSchema, groupsSchema, postsSchema,
                 chatsSchema, marketplaceSchema, relationshipsSchema,
                 reportsSchema, interactionsSchema, vipSchema,    
-                financialSchema, adsSchema, feesSchema, auditSchema
+                financialSchema, adsSchema, feesSchema, auditSchema,
+                settingsSchema // <-- Adicionado
             ];
 
             for (const sql of schemas) { 

@@ -1,6 +1,5 @@
 
 import React, { lazy } from 'react';
-import { Route } from 'react-router-dom';
 import { ProtectedRoute } from '../../components/auth/ProtectedRoute';
 
 const Groups = lazy(() => import('../../pages/Groups').then(m => ({ default: m.Groups })));
@@ -34,40 +33,37 @@ const ManageGroupLinks = lazy(() => import('../../pages/ManageGroupLinks').then(
 const GroupRevenue = lazy(() => import('../../pages/GroupRevenue').then(m => ({ default: m.GroupRevenue })));
 const VipSalesHistory = lazy(() => import('../../pages/VipSalesHistory').then(m => ({ default: m.VipSalesHistory })));
 
-const GroupRoutes = () => (
-  <>
-    <Route path="/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
-    <Route path="/group-chat/:id" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
-    <Route path="/group-chat/:id/:channelId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
-    <Route path="/group/:id/channels" element={<ProtectedRoute><GroupChannelsList /></ProtectedRoute>} />
-    <Route path="/group-landing/:id" element={<GroupLanding />} />
-    <Route path="/vip-group-sales/:id" element={<VipGroupSales />} />
-    <Route path="/create-group" element={<ProtectedRoute><CreateGroup /></ProtectedRoute>} />
-    <Route path="/create-group/vip" element={<ProtectedRoute><CreateVipGroup /></ProtectedRoute>} />
-    <Route path="/create-group/public" element={<ProtectedRoute><CreatePublicGroup /></ProtectedRoute>} />
-    <Route path="/create-group/private" element={<ProtectedRoute><CreatePrivateGroup /></ProtectedRoute>} />
-    <Route path="/edit-group/:id" element={<ProtectedRoute><EditGroup /></ProtectedRoute>} />
-    <Route path="/payment-success-bridge/:id" element={<ProtectedRoute><SuccessBridge /></ProtectedRoute>} />
-    <Route path="/group-settings/:id" element={<ProtectedRoute><GroupSettings /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/info" element={<ProtectedRoute><GroupInfoPage /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/access" element={<ProtectedRoute><GroupAccessPage /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/moderation" element={<ProtectedRoute><GroupModerationPage /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/members" element={<ProtectedRoute><GroupMembersPage /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/roles" element={<ProtectedRoute><GroupRolesPage /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/vip" element={<ProtectedRoute><GroupVipPage /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/stats" element={<ProtectedRoute><GroupStatisticsPage /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/audit" element={<ProtectedRoute><GroupAuditLogs /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/channels" element={<ProtectedRoute><GroupChannelsPage /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/schedule" element={<ProtectedRoute><GroupSchedule /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/sales-platform" element={<ProtectedRoute><GroupSalesPlatformPage /></ProtectedRoute>} />
-    <Route path="/group-settings/:id/checkout-config" element={<ProtectedRoute><GroupCheckoutConfigPage /></ProtectedRoute>} />
-    <Route path="/group-platform/:id" element={<ProtectedRoute><GroupSalesPlatformView /></ProtectedRoute>} />
-    <Route path="/group-folder/:groupId/:folderId" element={<ProtectedRoute><SalesFolderContentPage /></ProtectedRoute>} />
-    <Route path="/group-limits/:id" element={<ProtectedRoute><GroupLimits /></ProtectedRoute>} />
-    <Route path="/group-links/:id" element={<ProtectedRoute><ManageGroupLinks /></ProtectedRoute>} />
-    <Route path="/group-revenue/:id" element={<ProtectedRoute><GroupRevenue /></ProtectedRoute>} />
-    <Route path="/vip-sales-history/:id" element={<ProtectedRoute><VipSalesHistory /></ProtectedRoute>} />
-  </>
-);
-
-export default GroupRoutes;
+export const groupRoutes = [
+    { path: '/groups', element: <ProtectedRoute><Groups /></ProtectedRoute> },
+    { path: '/group-chat/:id', element: <ProtectedRoute><GroupChat /></ProtectedRoute> },
+    { path: '/group-chat/:id/:channelId', element: <ProtectedRoute><GroupChat /></ProtectedRoute> },
+    { path: '/group/:id/channels', element: <ProtectedRoute><GroupChannelsList /></ProtectedRoute> },
+    { path: '/group-landing/:id', element: <GroupLanding /> },
+    { path: '/vip-group-sales/:id', element: <VipGroupSales /> },
+    { path: '/create-group', element: <ProtectedRoute><CreateGroup /></ProtectedRoute> },
+    { path: '/create-group/vip', element: <ProtectedRoute><CreateVipGroup /></ProtectedRoute> },
+    { path: '/create-group/public', element: <ProtectedRoute><CreatePublicGroup /></ProtectedRoute> },
+    { path: '/create-group/private', element: <ProtectedRoute><CreatePrivateGroup /></ProtectedRoute> },
+    { path: '/edit-group/:id', element: <ProtectedRoute><EditGroup /></ProtectedRoute> },
+    { path: '/payment-success-bridge/:id', element: <ProtectedRoute><SuccessBridge /></ProtectedRoute> },
+    { path: '/group-settings/:id', element: <ProtectedRoute><GroupSettings /></ProtectedRoute> },
+    { path: '/group-settings/:id/info', element: <ProtectedRoute><GroupInfoPage /></ProtectedRoute> },
+    { path: '/group-settings/:id/access', element: <ProtectedRoute><GroupAccessPage /></ProtectedRoute> },
+    { path: '/group-settings/:id/moderation', element: <ProtectedRoute><GroupModerationPage /></ProtectedRoute> },
+    { path: '/group-settings/:id/members', element: <ProtectedRoute><GroupMembersPage /></ProtectedRoute> },
+    { path: '/group-settings/:id/roles', element: <ProtectedRoute><GroupRolesPage /></ProtectedRoute> },
+    { path: '/group-settings/:id/vip', element: <ProtectedRoute><GroupVipPage /></ProtectedRoute> },
+    { path: '/group-settings/:id/stats', element: <ProtectedRoute><GroupStatisticsPage /></ProtectedRoute> },
+    { path: '/group-settings/:id/audit', element: <ProtectedRoute><GroupAuditLogs /></ProtectedRoute> },
+    { path: '/group-settings/:id/channels', element: <ProtectedRoute><GroupChannelsPage /></ProtectedRoute> },
+    { path: '/group-settings/:id/schedule', element: <ProtectedRoute><GroupSchedule /></ProtectedRoute> },
+    { path: '/group-settings/:id/sales-platform', element: <ProtectedRoute><GroupSalesPlatformPage /></ProtectedRoute> },
+    { path: '/group-settings/:id/checkout-config', element: <ProtectedRoute><GroupCheckoutConfigPage /></ProtectedRoute> },
+    { path: '/group-platform/:id', element: <ProtectedRoute><GroupSalesPlatformView /></ProtectedRoute> },
+    { path: '/group-folder/:groupId/:folderId', element: <ProtectedRoute><SalesFolderContentPage /></ProtectedRoute> },
+    { path: '/group-limits/:id', element: <ProtectedRoute><GroupLimits /></ProtectedRoute> },
+    { path: '/group-links/:id', element: <ProtectedRoute><ManageGroupLinks /></ProtectedRoute> },
+    { path: '/group-revenue/:id', element: <ProtectedRoute><GroupRevenue /></ProtectedRoute> },
+    { path: '/vip-sales-history/:id', element: <ProtectedRoute><VipSalesHistory /></ProtectedRoute> }
+  ];
+  

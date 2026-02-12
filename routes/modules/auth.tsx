@@ -1,6 +1,5 @@
 
 import React, { lazy } from 'react';
-import { Route } from 'react-router-dom';
 
 const Login = lazy(() => import('../../pages/Login').then(m => ({ default: m.Login })));
 const Register = lazy(() => import('../../pages/Register').then(m => ({ default: m.Register })));
@@ -9,15 +8,11 @@ const ForgotPassword = lazy(() => import('../../pages/ForgotPassword').then(m =>
 const ResetPassword = lazy(() => import('../../pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
 const Banned = lazy(() => import('../../pages/Banned').then(m => ({ default: m.Banned })));
 
-const AuthRoutes = () => (
-  <>
-    <Route path="/" element={<Login />} />
-    <Route path="/register" element={<Register />} />
-    <Route path="/verify-email" element={<VerifyEmail />} />
-    <Route path="/forgot-password" element={<ForgotPassword />} />
-    <Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/banned" element={<Banned />} />
-  </>
-);
-
-export default AuthRoutes;
+export const authRoutes = [
+  { path: '/', element: <Login /> },
+  { path: '/register', element: <Register /> },
+  { path: '/verify-email', element: <VerifyEmail /> },
+  { path: '/forgot-password', element: <ForgotPassword /> },
+  { path: '/reset-password', element: <ResetPassword /> },
+  { path: '/banned', element: <Banned /> }
+];

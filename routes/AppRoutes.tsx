@@ -2,15 +2,29 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-// Módulos de Rotas
-import AuthRoutes from './modules/AuthRoutes';
-import FeedRoutes from './modules/FeedRoutes';
-import GroupRoutes from './modules/GroupRoutes';
-import MarketplaceRoutes from './modules/MarketplaceRoutes';
-import ProfileRoutes from './modules/ProfileRoutes';
-import SettingsRoutes from './modules/SettingsRoutes';
-import FinancialRoutes from './modules/FinancialRoutes';
-import NotificationRoutes from './modules/NotificationRoutes';
+// Importa os arrays de rotas dos módulos
+import {
+  authRoutes,
+  feedRoutes,
+  groupRoutes,
+  marketplaceRoutes,
+  profileRoutes,
+  settingsRoutes,
+  financialRoutes,
+  notificationRoutes,
+} from './modules';
+
+// Combina todos os módulos em um único array
+const allRoutes = [
+  ...authRoutes,
+  ...feedRoutes,
+  ...groupRoutes,
+  ...marketplaceRoutes,
+  ...profileRoutes,
+  ...settingsRoutes,
+  ...financialRoutes,
+  ...notificationRoutes
+];
 
 // Componente de Loading
 const LoadingSpinner = () => (
@@ -23,15 +37,10 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
-        {/* Renderiza os módulos de rotas como componentes */}
-        <AuthRoutes />
-        <FeedRoutes />
-        <GroupRoutes />
-        <MarketplaceRoutes />
-        <ProfileRoutes />
-        <SettingsRoutes />
-        <FinancialRoutes />
-        <NotificationRoutes />
+        {/* Mapeia o array de rotas para os componentes <Route> */}
+        {allRoutes.map((route, index) => (
+          <Route key={index} path={route.path} element={route.element} />
+        ))}
         
         {/* Rota Fallback: Redireciona para o feed se nenhuma outra rota corresponder */}
         <Route path="*" element={<Navigate to="/feed" replace />} />

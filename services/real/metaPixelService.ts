@@ -27,23 +27,6 @@ export const metaPixelService = {
         });
     },
 
-    trackRecruitmentAccess: async (ref: string) => {
-        if (!ref) return;
-        try {
-            const response = await fetch(`${API_BASE}/api/tracking/pixel-info?ref=${encodeURIComponent(ref)}`);
-            if (response.ok) {
-                const { pixelId, pixelToken } = await response.json();
-                if (pixelId) {
-                    // Inicializa com token para garantir CAPI se necessário
-                    metaPixelService.init(pixelId, pixelToken);
-                    metaPixelService.trackPageView(pixelId);
-                }
-            }
-        } catch (e) {
-            console.warn("[Pixel] Falha ao carregar pixel de afiliado.");
-        }
-    },
-
     trackLead: (pixelId: string, userData?: PixelUserData, groupId?: string) => {
         pixelOrchestrator.track('Lead', { 
             content_ids: groupId ? [groupId] : [],

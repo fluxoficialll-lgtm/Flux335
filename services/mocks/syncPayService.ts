@@ -30,7 +30,6 @@ export const syncPayService = {
             { id: '7', amount: 19.90, status: 'paid', provider: 'stripe', method: 'Card', country: 'GB', groupId: currentGroupId, createdAt: now - 600000 },
         ];
     },
-    getAffiliateStats: async () => ({ totalEarned: 450, totalInvoiced: 5000, referredSellers: [], recentSales: [] }),
     getFees: async () => ({ sale_fee_type: "percent", sale_fee_value: 10, withdrawal_fee: 5.00 }),
     requestWithdrawal: async () => ({ transactionId: 'wd_mock' })
 };

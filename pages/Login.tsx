@@ -24,7 +24,6 @@ export const Login: React.FC = () => {
     const buttonRendered = React.useRef(false);
     const GOOGLE_BTN_ID = 'googleButtonDiv';
 
-    // Affiliate Detection
     useEffect(() => {
         trackingService.captureUrlParams();
     }, [location]);
@@ -58,8 +57,7 @@ export const Login: React.FC = () => {
         setError('');
         try {
             if (!response || !response.credential) throw new Error("Login falhou.");
-            const referredBy = trackingService.getAffiliateRef() || undefined;
-            const result = await authService.loginWithGoogle(response.credential, referredBy);
+            const result = await authService.loginWithGoogle(response.credential);
             if (result && result.user) {
                 const isNew = result.nextStep === '/complete-profile' || !result.user.isProfileCompleted;
                 handleRedirect(result.user, isNew);

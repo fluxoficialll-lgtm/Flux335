@@ -1,11 +1,21 @@
 
 import { API_BASE } from '../../apiConfig';
 import { Group } from '../../types';
+import { authService } from '../authService';
 
 const PROXY_BASE = `${API_BASE}/api/paypal`;
 
 const safeFetch = async (url: string, options: RequestInit = {}) => {
-    const res = await fetch(url, options);
+    const token = authService.getToken();
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+    };
+    if (token) {
+        (headers as any)['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(url, { ...options, headers });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `Request failed: ${res.status}`);
@@ -14,23 +24,19 @@ const safeFetch = async (url: string, options: RequestInit = {}) => {
 };
 
 export const paypalService = {
-    // Alias para o formulário
     authenticate: async (clientId: string, clientSecret: string) => {
-        return paypalService.verifyCredentials(clientId, clientSecret);
-    },
+        const user = authService.getCurrentUser();
+        if (!user) throw new Error("Usuário não autenticado.");
 
-    verifyCredentials: async (clientId: string, clientSecret: string) => {
         return safeFetch(`${PROXY_BASE}/auth-token`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ clientId, clientSecret })
+            body: JSON.stringify({ clientId, clientSecret, email: user.email })
         });
     },
 
     createOrder: async (group: Group, ownerEmail: string) => {
         return safeFetch(`${PROXY_BASE}/create-order`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 amount: parseFloat(group.price || '0'),
                 currency: group.currency || 'BRL',
@@ -43,13 +49,20 @@ export const paypalService = {
     checkOrderStatus: async (orderId: string, ownerEmail: string) => {
         return safeFetch(`${PROXY_BASE}/check-status`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId, ownerEmail })
         });
     },
 
     disconnect: async (): Promise<boolean> => {
-        await safeFetch(`${PROXY_BASE}/disconnect`, { method: 'POST' });
+        const user = authService.getCurrentUser();
+        if (!user) {
+            throw new Error("Usuário não autenticado.");
+        }
+
+        await safeFetch(`${PROXY_BASE}/disconnect`, { 
+            method: 'POST',
+            body: JSON.stringify({ email: user.email })
+        });
         return true;
     }
 };

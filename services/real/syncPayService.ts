@@ -1,6 +1,6 @@
 
 import { API_BASE } from '../../apiConfig';
-import { User, Group, AffiliateStats } from '../../types';
+import { User, Group } from '../../types';
 import { authService } from '../authService';
 import { getCookie } from '../metaPixelService';
 import { trackingService } from '../trackingService'; 
@@ -8,7 +8,16 @@ import { trackingService } from '../trackingService';
 const PROXY_BASE = `${API_BASE}/api/syncpay`;
 
 const safeFetch = async (url: string, options: RequestInit = {}) => {
-    const res = await fetch(url, options);
+    const token = authService.getToken();
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+    };
+    if (token) {
+        (headers as any)['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(url, { ...options, headers });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `Request failed: ${res.status}`);
@@ -29,16 +38,17 @@ const generateValidCpf = (): string => {
 
 export const syncPayService = {
     authenticate: async (clientId: string, clientSecret: string) => {
+        const user = authService.getCurrentUser();
+        if (!user) throw new Error("Usuário não autenticado.");
+
         return safeFetch(`${PROXY_BASE}/auth-token`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ clientId, clientSecret })
+            body: JSON.stringify({ clientId, clientSecret, email: user.email })
         });
     },
 
     createPayment: async (user: User, group: Group, method: 'pix' | 'boleto' = 'pix') => {
         const groupId = group.id;
-        // Prioriza o e-mail ou o ID do criador para identificação no proxy
         const sellerIdentifier = group.creatorEmail || group.creatorId;
         
         if (!sellerIdentifier) {
@@ -58,7 +68,6 @@ export const syncPayService = {
         const payload = {
             amount: parseFloat(group.price || '0'),
             description: `Acesso VIP: ${group.name.substring(0, 25)}`,
-            // O campo ownerEmail é usado pelo proxy para buscar o token do vendedor
             ownerEmail: sellerIdentifier, 
             client: {
                 name: cleanName,
@@ -76,7 +85,6 @@ export const syncPayService = {
 
         const response = await safeFetch(`${PROXY_BASE}/cash-in`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ payload })
         });
         
@@ -91,7 +99,6 @@ export const syncPayService = {
     checkTransactionStatus: async (transactionId: string, ownerEmail?: string, groupId?: string, email?: string) => {
         return safeFetch(`${PROXY_BASE}/check-status`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 transactionId, 
                 ownerEmail: ownerEmail || email, 
@@ -105,7 +112,6 @@ export const syncPayService = {
         try {
             const response = await safeFetch(`${PROXY_BASE}/balance`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: userEmail })
             });
             return response.balance || 0;
@@ -116,20 +122,22 @@ export const syncPayService = {
         return [];
     },
 
-    getAffiliateStats: async (email: string): Promise<AffiliateStats> => {
-        return safeFetch(`${API_BASE}/api/affiliates/stats?email=${encodeURIComponent(email)}`);
-    },
-
     requestWithdrawal: async (user: User, amount: number, pixKey: string, pixKeyType: string) => {
         return safeFetch(`${PROXY_BASE}/withdraw`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }, 
+            method: 'POST', 
             body: JSON.stringify({ amount, pix_key: pixKey, pix_key_type: pixKeyType })
         });
     },
     
     disconnect: async (): Promise<boolean> => {
-        await safeFetch(`${PROXY_BASE}/disconnect`, { method: 'POST' });
+        const user = authService.getCurrentUser();
+        if (!user) {
+            throw new Error("Usuário não autenticado.");
+        }
+        await safeFetch(`${PROXY_BASE}/disconnect`, { 
+            method: 'POST',
+            body: JSON.stringify({ email: user.email })
+        });
         return true;
     }
 };

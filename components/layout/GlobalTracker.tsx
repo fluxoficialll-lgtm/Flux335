@@ -8,14 +8,8 @@ export const GlobalTracker = () => {
   const location = useLocation();
   
   useEffect(() => {
-    // Capturar UTMs e Ref da URL atual
+    // Capturar UTMs da URL atual
     trackingService.captureUrlParams();
-
-    // Rastreio de Afiliado (Se houver ?ref=...)
-    const ref = trackingService.getAffiliateRef();
-    if (ref) {
-      metaPixelService.trackRecruitmentAccess(ref);
-    }
 
     // Track Page View Global (Pixel da Plataforma)
     // @ts-ignore

@@ -30,32 +30,6 @@ export interface VipAccess {
     transactionId: string;
 }
 
-export interface AffiliateSale {
-    id: string;
-    buyerId: string;
-    buyerEmail: string;
-    amount: number;
-    commission: number;
-    timestamp: number;
-    sellerName: string;
-}
-
-export interface AffiliateStats {
-    totalEarned: number;
-    totalInvoiced: number;
-    referredSellers: ReferredSeller[];
-    recentSales: AffiliateSale[];
-}
-
-export interface ReferredSeller {
-    id: string;
-    name: string;
-    username: string;
-    avatar?: string;
-    salesCount: number;
-    totalGenerated: number;
-}
-
 export interface MarketingConfig {
     pixelId?: string;
     pixelToken?: string;

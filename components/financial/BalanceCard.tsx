@@ -6,7 +6,6 @@ export type CurrencyCode = 'BRL' | 'USD' | 'EUR';
 interface CurrencyStats {
     total: number;
     own: number;
-    affiliate: number;
 }
 
 interface BalanceCardProps {
@@ -108,13 +107,6 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                         Vendas Próprias
                     </span>
                     <span className="font-bold text-white">{config.symbol} {formatValue(currentStats.own)}</span>
-                </div>
-                <div className="breakdown-item flex justify-between text-[13px]">
-                    <span className="flex items-center gap-2 text-gray-400">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#FFD700]"></div> 
-                        Comissões Afiliados
-                    </span>
-                    <span className="font-bold text-white">{config.symbol} {formatValue(currentStats.affiliate)}</span>
                 </div>
             </div>
 

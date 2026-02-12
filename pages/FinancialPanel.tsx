@@ -2,9 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { syncPayService } from '../services/syncPayService';
-import { AffiliateStats } from '../types';
 import { BalanceCard, CurrencyCode } from '../components/financial/BalanceCard';
-import { AffiliateCard } from '../components/financial/AffiliateCard';
 import { GatewayCard } from '../components/financial/GatewayCard';
 import CashFlowChart from '../components/financial/CashFlowChart';
 import TransactionHistoryCard from '../components/financial/TransactionHistoryCard';
@@ -17,20 +15,14 @@ export const FinancialPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [preferredProvider, setPreferredProvider] = useState<string>('syncpay');
   
-  const [currencyStats, setCurrencyStats] = useState<Record<CurrencyCode, { total: number; own: number; affiliate: number }>>({
-      BRL: { total: 0, own: 0, affiliate: 0 },
-      USD: { total: 0, own: 0, affiliate: 0 },
-      EUR: { total: 0, own: 0, affiliate: 0 }
+  const [currencyStats, setCurrencyStats] = useState<Record<CurrencyCode, { total: number; own: number; }>>({
+      BRL: { total: 0, own: 0 },
+      USD: { total: 0, own: 0 },
+      EUR: { total: 0, own: 0 }
   });
 
   const [allTransactions, setAllTransactions] = useState<any[]>([]);
   const [walletBalances, setWalletBalances] = useState({ BRL: 0, USD: 0, EUR: 0 });
-  const [affiliateStats, setAffiliateStats] = useState<AffiliateStats | null>(null);
-
-  const [pixelId, setPixelId] = useState('');
-  const [pixelToken, setPixelToken] = useState('');
-  const [isSavingMarketing, setIsSavingMarketing] = useState(false);
-  const [isCopyingLink, setIsCopyingLink] = useState(false);
 
   const filters = ['Disponível', 'Hoje', 'Ontem', '7d', '30d', '180d'];
 
@@ -53,18 +45,18 @@ export const FinancialPanel: React.FC = () => {
       const tsFilter = getFilterTimestamp(selectedFilter);
       const isAvailableMode = selectedFilter === 'Disponível';
 
-      const newStats: Record<CurrencyCode, { total: number; own: number; affiliate: number }> = {
-          BRL: { total: 0, own: 0, affiliate: 0 },
-          USD: { total: 0, own: 0, affiliate: 0 },
-          EUR: { total: 0, own: 0, affiliate: 0 }
+      const newStats: Record<CurrencyCode, { total: number; own: number; }> = {
+          BRL: { total: 0, own: 0 },
+          USD: { total: 0, own: 0 },
+          EUR: { total: 0, own: 0 }
       };
 
       if (isAvailableMode) {
           newStats.BRL.total = walletBalances.BRL || 0;
           newStats.USD.total = walletBalances.USD || 0;
           newStats.EUR.total = walletBalances.EUR || 0;
-          newStats.BRL.affiliate = affiliateStats?.totalEarned || 0;
-          newStats.BRL.own = Math.max(0, newStats.BRL.total - newStats.BRL.affiliate);
+          newStats.BRL.own = walletBalances.BRL || 0;
+
       } else {
           if (Array.isArray(allTransactions)) {
               allTransactions.forEach(tx => {
@@ -81,18 +73,9 @@ export const FinancialPanel: React.FC = () => {
                   }
               });
           }
-          affiliateStats?.recentSales?.forEach(sale => {
-              const sDate = sale.timestamp;
-              const isMatch = selectedFilter === 'Ontem' ? (sDate >= tsFilter && sDate < startOfDay) : (sDate >= tsFilter);
-              if (isMatch) {
-                  const currency = 'BRL'; 
-                  newStats[currency].affiliate += sale.commission;
-                  newStats[currency].total += sale.commission;
-              }
-          });
       }
       setCurrencyStats(newStats);
-  }, [selectedFilter, allTransactions, walletBalances, affiliateStats]);
+  }, [selectedFilter, allTransactions, walletBalances]);
 
   const loadData = async () => {
       setLoading(true);
@@ -126,8 +109,6 @@ export const FinancialPanel: React.FC = () => {
                   else setWalletBalances({ BRL: balance, USD: balance / 5.0, EUR: balance / 5.4 });
                   const transactions = await syncPayService.getTransactions(user.email);
                   setAllTransactions(Array.isArray(transactions) ? transactions : []);
-                  const affStats = await syncPayService.getAffiliateStats(user.email);
-                  setAffiliateStats(affStats);
               } catch (e) { console.error("Erro dados financeiros", e); }
           }
       }
@@ -167,7 +148,6 @@ export const FinancialPanel: React.FC = () => {
 
         <TransactionHistoryCard />
 
-        {activeProviderName && <AffiliateCard affiliateStats={affiliateStats} pixelId={pixelId} setPixelId={setPixelId} pixelToken={pixelToken} setPixelToken={setPixelToken} isSavingMarketing={isSavingMarketing} onSaveMarketing={() => {}} onCopyAffiliateLink={() => {}} isCopyingLink={isCopyingLink} onOpenTracking={() => {}} />}
         <GatewayCard 
             activeProvider={activeProviderName}
             onManage={() => navigate('/financial/providers')}

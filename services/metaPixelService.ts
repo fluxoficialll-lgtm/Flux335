@@ -18,22 +18,6 @@ export const metaPixelService = {
         pixelOrchestrator.track('PageView');
     },
 
-    trackRecruitmentAccess: async (ref: string) => {
-        if (!ref) return;
-        try {
-            const response = await fetch(`${API_BASE}/api/tracking/pixel-info?ref=${encodeURIComponent(ref)}`);
-            if (response.ok) {
-                const { pixelId, pixelToken } = await response.json();
-                if (pixelId) {
-                    metaPixelService.init(pixelId, pixelToken);
-                    pixelOrchestrator.track('PageView');
-                }
-            }
-        } catch (e) {
-            console.warn("[Pixel] Falha ao carregar pixel de afiliado.");
-        }
-    },
-
     trackLead: (pixelId: string, userData?: PixelUserData, groupId?: string) => {
         // PixelID é injetado no init da página
         pixelOrchestrator.track('Lead', { 

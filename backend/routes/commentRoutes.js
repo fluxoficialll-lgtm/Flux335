@@ -1,6 +1,6 @@
 
 import { Router } from 'express';
-import { commentController } from '../controllers/CommentController';
+import { commentController } from '../controllers/CommentController.js';
 import { authMiddleware } from '../middlewares/authMiddleware'; // Middleware para proteger as rotas
 
 const router = Router();

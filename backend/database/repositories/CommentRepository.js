@@ -1,5 +1,5 @@
 
-import { db } from '../config.js'; // Importa a configuração do banco de dados
+import { query as db } from '../pool.js'; // Importa a configuração do banco de dados
 import { NotFoundError, AppError } from '../../utils/errors.js';
 
 /**

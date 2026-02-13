@@ -57,12 +57,21 @@ router.get('/nearby', async (req, res) => {
 });
 
 /**
+ * @route   GET /api/users/update
+ * @desc    Endpoint de verificação para a rota de atualização.
+ * @access  Private
+ */
+router.get('/update', async (req, res) => {
+    res.json({ success: true, message: 'Endpoint GET /api/users/update atingido com sucesso.' });
+});
+
+
+/**
  * @route   PUT /api/users/update
  * @desc    Atualiza as informações do perfil do usuário.
  * @access  Private
  */
 router.put('/update', async (req, res) => {
-    // Esta é a rota que o frontend está tentando acessar.
     // A lógica de atualização real será implementada aqui.
     console.log('Corpo da requisição de atualização de perfil:', req.body);
     res.json({ success: true, message: 'Endpoint PUT /api/users/update acessado com sucesso.' });

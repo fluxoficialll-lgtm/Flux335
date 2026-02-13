@@ -17,8 +17,8 @@ export const Footer: React.FC<FooterProps> = ({ visible = true }) => {
 
     useEffect(() => {
         const updateCounts = () => {
-            setUnreadNotifs(notificationService.getUnreadNotificationsCount());
-            setUnreadMsgs(chatService.getUnreadMessagesCount());
+            setUnreadNotifs(notificationService.getUnreadCount());
+            setUnreadMsgs(chatService.getUnreadCount());
         };
         updateCounts();
         

@@ -1,4 +1,3 @@
-
 import express from 'express';
 
 const router = express.Router();
@@ -55,6 +54,10 @@ router.get('/nearby', async (req, res) => {
         console.error('[API] Erro ao buscar usuários próximos:', error);
         res.status(500).json({ error: 'Falha ao buscar usuários próximos.' });
     }
+});
+
+router.get('/update', async (req, res) => {
+    res.json({ success: true, message: 'Endpoint GET /api/users/update atingido.' });
 });
 
 export default router;

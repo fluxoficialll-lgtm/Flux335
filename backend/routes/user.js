@@ -1,64 +1,63 @@
-
 import express from 'express';
-import { z } from 'zod';
-import { UserRepository } from '../database/repositories/UserRepository.js';
 
 const router = express.Router();
 
-// Esquema de validação para o perfil
-const profileSchema = z.object({
-  nickname: z.string().min(2, 'Apelido deve ter no mínimo 2 caracteres').optional(),
-  bio: z.string().max(500, 'Bio deve ter no máximo 500 caracteres').optional(),
-  photoUrl: z.string().url('URL da foto inválida').optional(),
+/**
+ * @route   POST /api/users/update-location
+ * @desc    Atualiza a localização geográfica do usuário logado.
+ * @access  Private
+ */
+router.post('/update-location', async (req, res) => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ error: 'Usuário não autenticado.' });
+        }
+
+        const { latitude, longitude } = req.body;
+        if (latitude === undefined || longitude === undefined) {
+            return res.status(400).json({ error: 'Latitude e longitude são obrigatórias.' });
+        }
+
+        await req.hub.users.updateLocation(userId, latitude, longitude);
+
+        res.json({ success: true, message: 'Localização atualizada com sucesso.' });
+
+    } catch (error) {
+        console.error('[API] Erro ao atualizar localização:', error);
+        res.status(500).json({ error: 'Falha ao atualizar a localização.' });
+    }
 });
 
 /**
- * Middleware para garantir que o usuário está autenticado
+ * @route   GET /api/users/nearby
+ * @desc    Encontra usuários próximos a um determinado ponto geográfico.
+ * @access  Public (ou Private, dependendo da regra de negócio)
  */
-const ensureAuthenticated = (req, res, next) => {
-    if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Usuário não autenticado.' });
+router.get('/nearby', async (req, res) => {
+    try {
+        const { lat, lon, radius } = req.query;
+
+        const latitude = parseFloat(lat);
+        const longitude = parseFloat(lon);
+        const radiusInMeters = radius ? parseInt(radius) : 50000; // Raio de 50km por padrão
+
+        if (isNaN(latitude) || isNaN(longitude)) {
+            return res.status(400).json({ error: 'Parâmetros de latitude e longitude inválidos.' });
+        }
+
+        const users = await req.hub.users.findNearby(latitude, longitude, radiusInMeters);
+
+        res.json(users);
+
+    } catch (error) {
+        console.error('[API] Erro ao buscar usuários próximos:', error);
+        res.status(500).json({ error: 'Falha ao buscar usuários próximos.' });
     }
-    next();
-};
+});
 
-router.use(ensureAuthenticated);
-
-/**
- * @route   POST /api/user/profile
- * @desc    Atualiza o perfil do usuário
- * @access  Private
- */
-router.post('/profile', async (req, res) => {
-  const validation = profileSchema.safeParse(req.body);
-
-  if (!validation.success) {
-    return res.status(400).json({ error: 'Dados inválidos', details: validation.error.flatten() });
-  }
-
-  try {
-    const userId = req.user.id;
-    const currentUser = await UserRepository.findById(userId);
-
-    if (!currentUser) {
-      return res.status(404).json({ error: 'Usuário não encontrado.' });
-    }
-
-    // Mescla os dados existentes com os novos dados
-    const updatedProfile = { ...currentUser.profile, ...validation.data };
-    
-    await UserRepository.update({
-      id: userId,
-      profile: updatedProfile,
-      isProfileCompleted: true // Marcar como completo após a primeira atualização
-    });
-
-    res.status(200).json({ success: true, message: 'Perfil atualizado com sucesso.', profile: updatedProfile });
-
-  } catch (error) {
-    console.error('Erro ao atualizar perfil:', error);
-    res.status(500).json({ error: 'Erro interno do servidor ao atualizar o perfil.' });
-  }
+router.get('/update', async (req, res) => {
+    res.json({ success: true, message: 'Endpoint GET /api/users/update atingido.' });
 });
 
 export default router;

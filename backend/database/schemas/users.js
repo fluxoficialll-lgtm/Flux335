@@ -1,8 +1,8 @@
 
 export const usersSchema = `
     -- Habilita a extensão PostGIS se ainda não estiver habilitada.
-    -- Essencial para armazenar e consultar dados de geolocalização de forma eficiente.
     CREATE EXTENSION IF NOT EXISTS postgis;
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
     CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -17,20 +17,29 @@ export const usersSchema = `
         strikes INTEGER DEFAULT 0,
         data JSONB,
         referred_by_id UUID REFERENCES users(id),
-        created_at TIMESTAMP DEFAULT NOW(),
-
-        -- Campos de Geolocalização
-        latitude DOUBLE PRECISION,
-        longitude DOUBLE PRECISION,
-        location GEOGRAPHY(Point, 4326) -- O tipo de dado otimizado para PostGIS.
+        created_at TIMESTAMP DEFAULT NOW()
     );
     
+    -- Adiciona colunas de geolocalização se não existirem
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='latitude') THEN
+            ALTER TABLE users ADD COLUMN latitude DOUBLE PRECISION;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='longitude') THEN
+            ALTER TABLE users ADD COLUMN longitude DOUBLE PRECISION;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='location') THEN
+            ALTER TABLE users ADD COLUMN location GEOGRAPHY(Point, 4326);
+        END IF;
+    END;
+    $$;
+
     -- Índices existentes
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users (LOWER(email));
     CREATE INDEX IF NOT EXISTS idx_users_handle_lower ON users (LOWER(handle));
     CREATE INDEX IF NOT EXISTS idx_users_google ON users(google_id);
 
     -- Índice Espacial (GIST - Generalized Search Tree)
-    -- Este é o segredo para buscas de geolocalização extremamente rápidas.
     CREATE INDEX IF NOT EXISTS idx_users_location ON users USING GIST(location);
 `;

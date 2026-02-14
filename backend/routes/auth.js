@@ -17,7 +17,8 @@ router.post('/register', async (req, res) => {
         const user = req.body;
         if (user.referredById === "") user.referredById = null;
         const userId = await dbManager.users.create(user);
-        res.json({ success: true, user: { ...user, id: userId } });
+        const createdUser = await dbManager.users.findById(userId);
+        res.json({ success: true, user: createdUser });
     } catch (e) { 
         console.error("Register Error:", e.message);
         res.status(500).json({ error: e.message }); 

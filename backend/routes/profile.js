@@ -30,4 +30,22 @@ router.get('/edit', async (req, res) => {
     }
 });
 
+// Rota para obter o perfil público de um usuário pelo ID
+router.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await dbManager.users.findById(id);
+
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado.' });
+        }
+        
+        res.json(user);
+
+    } catch (error) {
+        console.error(`Erro ao buscar perfil para o ID: ${req.params.id}`, error);
+        res.status(500).json({ error: 'Falha ao buscar o perfil do usuário.' });
+    }
+});
+
 export default router;

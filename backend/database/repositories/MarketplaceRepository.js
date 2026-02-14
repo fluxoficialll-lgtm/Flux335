@@ -3,7 +3,18 @@ import { query } from '../pool.js';
 
 const mapRowToItem = (row) => {
     if (!row) return null;
-    const metadata = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {});
+
+    let metadata = {};
+    try {
+        // Tenta analisar os metadados. Se falhar, registra um erro, mas não quebra a aplicação.
+        // Isso impede que um único item com JSON inválido derrube toda a listagem.
+        metadata = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {});
+    } catch (error) {
+        console.error(`Falha ao analisar JSON para o item do marketplace com id: ${row.id}`, error);
+        // Retorna null para que o item problemático possa ser filtrado posteriormente.
+        return null;
+    }
+
     return {
         ...metadata,
         id: row.id,
@@ -25,7 +36,9 @@ export const MarketplaceRepository = {
 
     async list() {
         const res = await query('SELECT * FROM marketplace ORDER BY created_at DESC');
-        return res.rows.map(mapRowToItem);
+        // Mapeia as linhas e filtra quaisquer itens nulos que resultaram de erros de análise.
+        // Isso garante que a aplicação continue funcionando mesmo com dados corrompidos.
+        return res.rows.map(mapRowToItem).filter(item => item !== null);
     },
 
     async findById(id) {

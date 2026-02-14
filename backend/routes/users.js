@@ -5,11 +5,11 @@ import { dbManager } from '../databaseManager.js';
 const router = express.Router();
 
 /**
- * @route   GET /api/users/sync
+ * @route   GET /api/users
  * @desc    Sincroniza todos os usuários com o cliente.
  * @access  Public
  */
-router.get('/sync', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         // Usa o dbManager para obter todos os usuários.
         const users = await dbManager.users.getAll();

@@ -25,8 +25,8 @@ echo "=== [FLUX BUILD] Limpando artefatos antigos ==="
 rm -rf dist
 
 # 4. Build do frontend (React + Vite)
-echo "=== [FLUX BUILD] Compilando frontend (forçando reconstrução) ==="
-npm run build -- --force
+echo "=== [FLUX BUILD] Compilando frontend ==="
+npm run build
 
 # 5. Verificação final
 if [ ! -d "dist" ]; then

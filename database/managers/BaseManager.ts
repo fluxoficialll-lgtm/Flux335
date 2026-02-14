@@ -8,16 +8,21 @@ export class BaseManager {
     protected queryAll<T>(table: string): T[] {
         const data = sqlite.getTableData(table);
 
-        // FIX: Ensure data is an array before calling .map
         if (!Array.isArray(data)) {
             console.warn(`[BaseManager] Data for table '${table}' is not an array. Returning empty array.`);
             return [];
         }
 
         return data.map(item => {
-            // Se for string (legado do SQLite), tenta parsear, senão retorna o objeto
+            // FIX: Robust parsing to handle inconsistencies
             if (typeof item.data === 'string') {
-                try { return JSON.parse(item.data); } catch { return item.data; }
+                try {
+                    const parsed = JSON.parse(item.data);
+                    return { ...item, ...parsed };
+                } catch (e) {
+                    console.warn(`[BaseManager] Failed to parse item data for table '${table}'.`, e);
+                    return item; 
+                }
             }
             return item;
         });

@@ -27,7 +27,9 @@ export const interactionsSchema = `
         -- 📝 Tipo do conteúdo que foi visualizado (ex: 'post', 'reel', 'profile').
         target_type TEXT NOT NULL,
         -- 📝 Data e hora da visualização.
-        created_at TIMESTAMPTZ DEFAULT NOW()
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        -- 📝 Garante que uma visualização seja registrada apenas uma vez por usuário/conteúdo.
+        UNIQUE(user_id, target_id, target_type)
     );
 
     -- 📝 Cria um índice combinado para buscar likes em um conteúdo específico.

@@ -1,7 +1,28 @@
+
 import express from 'express';
 import { dbManager } from '../databaseManager.js';
 
 const router = express.Router();
+
+/**
+ * @route   GET /api/users/sync
+ * @desc    Sincroniza todos os usuários com o cliente.
+ * @access  Public
+ */
+router.get('/sync', async (req, res) => {
+    try {
+        // Usa o dbManager para obter todos os usuários.
+        const users = await dbManager.users.getAll();
+
+        // Retorna a lista de usuários dentro de um objeto, como o frontend espera
+        res.json({ users: users });
+
+    } catch (error) {
+        console.error('[API] Erro ao sincronizar usuários:', error);
+        res.status(500).json({ error: 'Falha ao sincronizar usuários.' });
+    }
+});
+
 
 /**
  * @route   POST /api/users/update-location

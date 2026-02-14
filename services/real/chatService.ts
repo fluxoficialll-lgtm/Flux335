@@ -27,13 +27,13 @@ export const chatService = {
     },
 
     getChatById: (chatId: string): ChatData | undefined => {
-        return db.chats.findById(chatId);
+        return db.chats.get(chatId);
     },
     
     // --- Funções Auxiliares e de Interação (Mantidas) ---
 
     reportMessage: (chatId: string, messageId: number, reason: string, comments: string) => {
-        const chat = db.chats.findById(chatId);
+        const chat = db.chats.get(chatId);
         if (chat) {
             const msgIndex = chat.messages.findIndex(m => m.id === messageId);
             if (msgIndex !== -1) {
@@ -47,7 +47,7 @@ export const chatService = {
     },
 
     reactToMessage: (chatId: string, messageId: number, reaction: string) => {
-        const chat = db.chats.findById(chatId);
+        const chat = db.chats.get(chatId);
         const currentUser = authService.getCurrentUser();
         if (!chat || !currentUser) return;
 
@@ -74,7 +74,7 @@ export const chatService = {
     },
 
     getGroupUnreadCount: (groupId: string): number => {
-        const chat = db.chats.findById(groupId);
+        const chat = db.chats.get(groupId);
         if (!chat || !Array.isArray(chat.messages)) {
             return 0;
         }

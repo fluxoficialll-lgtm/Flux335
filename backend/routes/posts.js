@@ -8,15 +8,18 @@ const router = express.Router();
 router.get('/', async (req, res) => {
     try {
         const { limit, cursor } = req.query;
+        // A lógica de paginação no repositório foi atualizada para usar 'published_at' como cursor.
         const posts = await dbManager.posts.list(Number(limit) || 50, cursor);
         
         let nextCursor = null;
         if (posts.length > 0) {
-            nextCursor = posts[posts.length - 1].timestamp;
+            // O cursor para a próxima página será a data de publicação do último post.
+            nextCursor = posts[posts.length - 1].publishedAt;
         }
 
         res.json({ data: posts, nextCursor });
     } catch (e) {
+        console.error('Falha ao listar posts:', e);
         res.status(500).json({ error: e.message });
     }
 });
@@ -24,13 +27,16 @@ router.get('/', async (req, res) => {
 // Criar Post
 router.post('/create', async (req, res) => {
     try {
-        const post = req.body;
-        if (!post.id || !post.authorId) {
-            return res.status(400).json({ error: "ID e authorId são obrigatórios" });
+        const postData = req.body;
+        // O ID é gerado pelo banco de dados, então não é mais necessário na requisição.
+        // O repositório agora espera 'userId' em vez de 'authorId'.
+        if (!postData.userId) {
+            return res.status(400).json({ error: "O campo 'userId' é obrigatório." });
         }
-        await dbManager.posts.create(post);
-        res.json({ success: true });
+        const newPost = await dbManager.posts.create(postData);
+        res.status(201).json({ success: true, post: newPost });
     } catch (e) {
+        console.error('Falha ao criar post:', e);
         res.status(500).json({ error: e.message });
     }
 });
@@ -39,7 +45,7 @@ router.post('/create', async (req, res) => {
 router.post('/:id/interact', async (req, res) => {
     try {
         const { id } = req.params;
-        const { type, userId, action } = req.body; // action: 'add' ou 'remove' (para likes)
+        const { type, userId, action } = req.body;
         
         if (!userId || !type) return res.status(400).json({ error: "userId e type são obrigatórios" });
         
@@ -52,20 +58,8 @@ router.post('/:id/interact', async (req, res) => {
         
         res.json({ success, message: success ? "Interação processada" : "Interação ignorada (duplicada ou inexistente)" });
     } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
-
-// Adicionar Comentário
-router.post('/:id/comment', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { comment } = req.body;
-        if (!comment) return res.status(400).json({ error: "Comentário ausente" });
-        
-        await dbManager.posts.addComment(id, comment);
-        res.json({ success: true });
-    } catch (e) {
+        // O erro sobre a tabela 'interactions' será lançado aqui.
+        console.error('Falha ao processar interação:', e);
         res.status(500).json({ error: e.message });
     }
 });
@@ -73,9 +67,14 @@ router.post('/:id/comment', async (req, res) => {
 // Deletar Post
 router.delete('/:id', async (req, res) => {
     try {
-        await dbManager.posts.delete(req.params.id);
+        const success = await dbManager.posts.delete(req.params.id);
+        if (!success) {
+            return res.status(404).json({ error: 'Post não encontrado ou ID inválido.' });
+        }
         res.json({ success: true });
     } catch (e) {
+        console.error('Falha ao deletar post:', e);
+        // O erro de UUID inválido do repositório será capturado aqui.
         res.status(500).json({ error: e.message });
     }
 });

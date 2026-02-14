@@ -1,53 +1,72 @@
 
 import { query } from '../pool.js';
 
+// Mapeia a linha do banco de dados para o objeto Post, alinhado com o schema.
 const mapRowToPost = (row) => {
     if (!row) return null;
-    const metadata = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {});
     return {
-        ...metadata,
         id: row.id,
-        authorId: row.author_id,
-        likesCount: row.likes_count,
-        viewsCount: row.views_count,
-        isAd: row.is_ad,
-        isAdult: row.is_adult,
-        createdAt: row.created_at
+        userId: row.user_id,
+        content: row.content,
+        mediaUrls: row.media_urls,
+        status: row.status,
+        likeCount: row.like_count,
+        commentCount: row.comment_count,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        publishedAt: row.published_at
     };
 };
 
 export const PostRepository = {
+    // Cria um novo post, deixando o banco de dados gerar o UUID.
     async create(post) {
-        const { id, authorId, isAd, isAdult, ...data } = post;
-        await query(`
-            INSERT INTO posts (id, author_id, is_ad, is_adult, data)
+        const { userId, content, mediaUrls, status, publishedAt } = post;
+        const res = await query(`
+            INSERT INTO posts (user_id, content, media_urls, status, published_at)
             VALUES ($1, $2, $3, $4, $5)
-        `, [id, authorId, !!isAd, !!isAdult, JSON.stringify(data)]);
-        return true;
+            RETURNING *
+        `, [userId, content, mediaUrls, status, publishedAt]);
+        // Retorna o post completo com o ID gerado pelo banco de dados.
+        return mapRowToPost(res.rows[0]);
     },
 
+    // Lista os posts com paginação.
     async list(limit = 50, cursor = null) {
         const params = [];
-        let sql = 'SELECT * FROM posts ';
+        let sql = 'SELECT * FROM posts WHERE status = \'published\' ';
         let placeholderCount = 1;
 
         if (cursor) {
-            sql += `WHERE created_at < $${placeholderCount++} `;
+            // Assumindo paginação baseada em 'published_at'
+            sql += `AND published_at < $${placeholderCount++} `;
             params.push(cursor);
         }
 
-        sql += `ORDER BY created_at DESC LIMIT $${placeholderCount++}`;
+        sql += `ORDER BY published_at DESC LIMIT $${placeholderCount++}`;
         params.push(limit);
 
         const res = await query(sql, params);
         return res.rows.map(mapRowToPost);
     },
 
+    // Deleta um post pelo seu ID (UUID).
     async delete(id) {
-        await query('DELETE FROM posts WHERE id = $1', [id]);
-        return true;
+        // Validação básica de UUID para evitar erros no banco de dados.
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(id)) {
+            // Lança um erro se o ID não for um UUID, que será capturado pela rota.
+            throw new Error('ID inválido. O formato esperado é UUID.');
+        }
+        const res = await query('DELETE FROM posts WHERE id = $1', [id]);
+        // Retorna true se uma linha foi afetada.
+        return res.rowCount > 0;
     },
 
+    // A lógica para adicionar comentários precisaria ser reavaliada com base no schema atual,
+    // que usa uma contagem 'comment_count' em vez de um JSON aninhado.
+    // Esta função foi comentada para evitar erros.
+    /*
     async addComment(id, comment) {
         await query(`
             UPDATE posts 
@@ -55,4 +74,5 @@ export const PostRepository = {
             WHERE id = $1
         `, [id, JSON.stringify(comment)]);
     }
+    */
 };

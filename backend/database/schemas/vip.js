@@ -1,9 +1,9 @@
 
 export const vipSchema = `
     CREATE TABLE IF NOT EXISTS vip_access (
-        id TEXT PRIMARY KEY, 
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), 
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, 
-        group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE, 
+        group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE, 
         data JSONB, 
         created_at TIMESTAMP DEFAULT NOW(),
         UNIQUE(user_id, group_id) -- Impede que o mesmo usuário tenha duas linhas de VIP no mesmo grupo

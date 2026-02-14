@@ -46,26 +46,35 @@ export const PostActionService = {
     },
 
     async deletePost(id: string): Promise<void> {
-        const post = await db.posts.get(id);
-        db.posts.delete(id);
-
-        if (post) {
-            if (post.type === 'video') {
-                logService.logEvent('PostgreSQL Reels Metadados Apagados. 🗑️', { postId: id });
-            } else if (post.groupId) {
-                logService.logEvent('PostgreSQL Group Post Metadados Apagados. 🗑️', { postId: id, groupId: post.groupId });
-            } else {
-                logService.logEvent('PostgreSQL Feed Metadados Apagados. 🗑️', { postId: id });
-            }
-
-            if (post.media) {
-                const folder = post.groupId ? 'group-media' : (post.type === 'video' ? 'reels' : 'feed');
-                logService.logEvent('Cloudflare Mídia Apagadas. 🗑️', { postId: id, folder });
-            }
-        }
-
         try {
-            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-        } catch(e) {}
+            const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ message: 'Failed to delete post on server.' }));
+                throw new Error(errorData.error || 'Server error during deletion');
+            }
+    
+            const post = await db.posts.get(id);
+            db.posts.delete(id);
+    
+            if (post) {
+                if (post.type === 'video') {
+                    logService.logEvent('PostgreSQL Reels Metadados Apagados. 🗑️', { postId: id });
+                } else if (post.groupId) {
+                    logService.logEvent('PostgreSQL Group Post Metadados Apagados. 🗑️', { postId: id, groupId: post.groupId });
+                } else {
+                    logService.logEvent('PostgreSQL Feed Metadados Apagados. 🗑️', { postId: id });
+                }
+    
+                if (post.media) {
+                    const folder = post.groupId ? 'group-media' : (post.type === 'video' ? 'reels' : 'feed');
+                    logService.logEvent('Cloudflare Mídia Apagadas. 🗑️', { postId: id, folder });
+                }
+            }
+    
+        } catch(error) {
+            console.error("Failed to delete post:", error);
+            logService.logEvent('Falha ao apagar post. ❌', { postId: id, error: error.message });
+            throw error;
+        }
     }
 };

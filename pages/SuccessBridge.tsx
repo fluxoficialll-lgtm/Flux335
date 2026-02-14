@@ -26,12 +26,12 @@ export const SuccessBridge: React.FC = () => {
         }
 
         try {
-            const foundGroup = await groupService.fetchGroupById(id);
+            const foundGroup = group || await groupService.fetchGroupById(id);
             if (!foundGroup) throw new Error("Grupo não encontrado");
-            setGroup(foundGroup);
+            if (!group) setGroup(foundGroup);
 
             // Verifica se o VIP já foi concedido no banco de dados local (alimentado pelo sync/webhook)
-            const isVipActive = db.vipAccess.check(userId, id);
+            const isVipActive = db.vipAccess.check(userId, foundGroup);
             
             if (isVipActive) {
                 setStatus('ready');
@@ -53,7 +53,7 @@ export const SuccessBridge: React.FC = () => {
             setStatus('error');
             setMessage('Falha ao validar acesso.');
         }
-    }, [id, navigate]);
+    }, [id, navigate, group]);
 
     useEffect(() => {
         const interval = setInterval(checkAccess, 2500);

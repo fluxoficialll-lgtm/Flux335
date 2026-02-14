@@ -1,9 +1,8 @@
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { chatService } from '../services/chatService';
-import { notificationService } from '../services/notificationService';
+import { userService } from '../services/userService'; // Importa o userService
 import { db } from '@/database';
 import { MessagesMenuModal } from '../components/chat/MessagesMenuModal';
 import { MainHeader } from '../components/layout/MainHeader';
@@ -11,6 +10,7 @@ import { MessageListItem } from '../components/chat/MessageListItem';
 import { MessagesEmptyState } from '../components/chat/MessagesEmptyState';
 import { MessagesFooter } from '../components/chat/MessagesFooter';
 import { useModal } from '../components/ModalSystem';
+import { User } from '@/types';
 
 interface Contact {
   id: string;
@@ -35,9 +35,6 @@ export const Messages: React.FC = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const [unreadNotifs, setUnreadNotifs] = useState(0);
-  const [unreadMsgs, setUnreadMsgs] = useState(0);
-
   const formatLastSeen = (timestamp?: number) => {
       if (!timestamp) return "Offline";
       const diff = Date.now() - timestamp;
@@ -46,10 +43,11 @@ export const Messages: React.FC = () => {
   };
 
   const loadChats = useCallback(() => {
-      const currentUserEmail = authService.getCurrentUserEmail()?.toLowerCase();
-      if (!currentUserEmail) return;
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser?.email) return;
       
       const rawChats = chatService.getAllChats();
+      const users = db.users.getAll();
       
       const formatted: Contact[] = Object.values(rawChats).map((chat): Contact | null => {
           const chatIdStr = chat.id.toString().toLowerCase();
@@ -58,15 +56,15 @@ export const Messages: React.FC = () => {
           const lastMsg = chat.messages[chat.messages.length - 1];
           if (!lastMsg) return null;
 
-          const otherEmail = chatIdStr.split('_').find(p => p !== currentUserEmail);
-          const user = otherEmail ? Object.values(db.users.getAll()).find(u => u.email.toLowerCase() === otherEmail) : undefined;
+          const otherEmail = chatIdStr.split('_').find(p => p !== currentUser.email.toLowerCase());
+          const user = otherEmail ? Object.values(users).find(u => u.email.toLowerCase() === otherEmail) : undefined;
 
           return {
               id: chat.id.toString(),
               name: user?.profile?.nickname || user?.profile?.name || chat.contactName,
               handle: user?.profile?.name || '',
               avatar: user?.profile?.photoUrl,
-              lastMessage: (lastMsg.senderEmail?.toLowerCase() === currentUserEmail ? 'Você: ' : '') + (lastMsg.text || 'Mídia'),
+              lastMessage: (lastMsg.senderEmail?.toLowerCase() === currentUser.email.toLowerCase() ? 'Você: ' : '') + (lastMsg.text || 'Mídia'),
               lastMessageTime: lastMsg.id,
               time: lastMsg.timestamp,
               status: formatLastSeen(user?.lastSeen),
@@ -86,11 +84,25 @@ export const Messages: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadChats();
+    const syncAndLoad = async () => {
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser?.id) {
+            navigate('/login');
+            return;
+        }
+        
+        // Garante que os dados dos usuários estejam no cache
+        await userService.syncAllUsers(); 
+        
+        loadChats();
+    };
+    
+    syncAndLoad();
+
     const unsubChats = db.subscribe('chats', loadChats);
     const unsubUsers = db.subscribe('users', loadChats);
     return () => { unsubChats(); unsubUsers(); };
-  }, [loadChats]);
+  }, [loadChats, navigate]);
 
   const handleSelectionAction = async (action: 'delete' | 'mute' | 'pin') => {
     if (selectedIds.length === 0) return;
@@ -110,7 +122,7 @@ export const Messages: React.FC = () => {
         });
         setSelectedIds([]);
         setIsSelectionMode(false);
-        loadChats(); // Recarrega para refletir as mudanças
+        loadChats();
     }
   };
 
@@ -156,7 +168,7 @@ export const Messages: React.FC = () => {
             )) : <MessagesEmptyState />}
         </main>
 
-        <MessagesFooter uiVisible={true} unreadMsgs={unreadMsgs} unreadNotifs={unreadNotifs} />
+        <MessagesFooter uiVisible={true} unreadMsgs={0} unreadNotifs={0} />
 
         <MessagesMenuModal 
             isOpen={isMenuModalOpen}

@@ -14,24 +14,23 @@ export const useUserProfile = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const loggedInUser = authService.getCurrentUser();
-
-        if (!loggedInUser?.id) {
-            navigate('/login');
-            return;
-        }
-
-        const userId = loggedInUser.id;
-
         const fetchAndCacheProfile = async () => {
+            const userId = authService.getUserId();
+
+            if (!userId) {
+                navigate('/login');
+                return;
+            }
+
             try {
                 // 1. Tenta carregar do cache local primeiro.
                 const cachedUser = await db.users.get(userId);
                 if (cachedUser) {
                     setUser(cachedUser);
                 } else {
-                    // Fallback para os dados básicos do authService se não houver nada no cache.
-                    setUser(loggedInUser);
+                    // Fallback para os dados básicos se não houver nada no cache.
+                    const basicUser = authService.getCurrentUser();
+                    if (basicUser) setUser(basicUser as User);
                 }
                 setLoading(true); // Mantém o loading para a busca de dados frescos.
 

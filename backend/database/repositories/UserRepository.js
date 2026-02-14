@@ -65,20 +65,19 @@ export const UserRepository = {
     },
 
     async create(user) {
-        const { email, password, googleId, referredById, profile, ...otherData } = user;
+        const { email, googleId, referredById, profile, ...otherData } = user;
         const handle = profile?.name?.toLowerCase().trim();
         
         const metadata = { ...otherData, profile };
 
         const res = await query(
-            `INSERT INTO users (email, password, handle, google_id, referred_by_id, data, is_profile_completed) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+            `INSERT INTO users (email, handle, google_id, referred_by_id, data, is_profile_completed) 
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
             [
-                email.toLowerCase().trim(), 
-                password, 
-                handle || null, 
-                googleId || null, 
-                toUuid(referredById), 
+                email.toLowerCase().trim(),
+                handle || null,
+                googleId || null,
+                toUuid(referredById),
                 JSON.stringify(metadata),
                 !!user.isProfileCompleted
             ]

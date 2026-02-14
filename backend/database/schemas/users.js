@@ -6,6 +6,10 @@ export const usersSchema = `
         id UUID PRIMARY KEY,
         -- 📝 Nome de usuário único, usado para login e identificação pública.
         username TEXT UNIQUE NOT NULL,
+        -- 📝 Endereço de e-mail único do usuário. Essencial para comunicação e recuperação.
+        email TEXT UNIQUE,
+        -- 📝 ID do Google, para login social.
+        google_id TEXT UNIQUE,
         -- 📝 Nome completo do usuário.
         full_name TEXT,
         -- 📝 URL da foto de perfil do usuário.

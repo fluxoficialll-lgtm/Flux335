@@ -1,3 +1,4 @@
+
 import { NotificationItem } from '../../types';
 import { authService } from '../authService';
 import { db } from '@/database';

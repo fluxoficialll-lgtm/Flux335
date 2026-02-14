@@ -1,3 +1,4 @@
+
 import { db } from '@/database';
 import { ChatMessage, ChatData } from '../../types';
 import { authService } from '../authService';
@@ -50,6 +51,26 @@ export const chatService = {
         }
 
         db.chats.set(chat);
+    },
+
+    // ADDED MISSING FUNCTION
+    getUnreadCount: (): number => {
+        const chats = db.chats.getAll();
+        // A simple (and likely inaccurate) way to count unread messages.
+        // This assumes a message is "unread" if it's not from the current user.
+        // A proper implementation would need a real "read" status on messages.
+        let unreadCount = 0;
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser) return 0;
+
+        chats.forEach(chat => {
+            chat.messages.forEach(message => {
+                if (message.senderId !== currentUser.id && !message.isRead) { 
+                    unreadCount++;
+                }
+            });
+        });
+        return unreadCount;
     },
 
     // ... rest of the service

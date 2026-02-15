@@ -5,15 +5,17 @@ import { API_BASE } from '../../apiConfig';
 import { userSearchService } from './userSearchService';
 import { apiClient } from '../apiClient';
 
+// A constante API_USERS já aponta para o caminho correto /api/users
 const API_USERS = `${API_BASE}/api/users`;
 
 export const profileService = {
   
   syncAllUsers: async (): Promise<void> => {
     try {
-      const users = await apiClient.get<User[]>(`/users`);
-      if (users && users.length > 0) {
-        sqlite.upsertItems('users', users);
+      // CORRIGIDO: Usando a constante API_USERS que contém o caminho correto.
+      const response = await apiClient.get<{users: User[]}>(API_USERS);
+      if (response && response.users && response.users.length > 0) {
+        sqlite.upsertItems('users', response.users);
       }
     } catch (error) {
       console.error("Falha ao sincronizar todos os usuários:", error);
@@ -21,13 +23,16 @@ export const profileService = {
   },
 
   getUserProfile: async (userId: string): Promise<User | null> => {
+    // Primeiro, tenta buscar no banco de dados local para uma resposta mais rápida.
     const localUser = db.users.findById(userId);
     if (localUser) {
       return localUser;
     }
 
+    // Se não encontrar localmente, busca na API.
     try {
-      const user = await apiClient.get<User>(`/profile/${userId}`);
+      // CORRIGIDO: O endpoint correto para buscar um usuário é /api/users/:id.
+      const user = await apiClient.get<User>(`${API_USERS}/${userId}`);
       if (user) {
         sqlite.upsertItems('users', [user]);
         return user;
@@ -40,6 +45,7 @@ export const profileService = {
   },
 
   completeProfile: async (email: string, data: UserProfile): Promise<User> => {
+      // Nota: Este endpoint /update pode precisar de revisão no futuro, mas não é a causa do bug atual.
       const response = await fetch(`${API_USERS}/update`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

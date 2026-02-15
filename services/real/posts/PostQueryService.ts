@@ -35,6 +35,27 @@ export const PostQueryService = {
     },
 
     /**
+     * NOVO: Sincroniza os posts de um usuário específico via API e os armazena localmente.
+     */
+    async syncUserPosts(authorId: string): Promise<void> {
+        try {
+            // Rota da API para buscar posts por usuário
+            const response = await fetch(`${API_URL}/user/${authorId}`);
+            if (response.ok) {
+                const data = await response.json();
+                // A API pode retornar os posts diretamente ou dentro de uma chave 'data'
+                const posts = data.data || data || [];
+                const sanitized = posts.map(PostUtils.sanitizePost);
+                if (sanitized.length > 0) {
+                    sqlite.upsertItems('posts', sanitized);
+                }
+            }
+        } catch (error) {
+            console.error(`Falha ao sincronizar posts do usuário ${authorId}:`, error);
+        }
+    },
+
+    /**
      * Realiza busca global por texto ou usuário.
      */
     async searchPosts(query: string): Promise<Post[]> {
@@ -60,6 +81,10 @@ export const PostQueryService = {
         return post ? PostUtils.sanitizePost(post) : undefined;
     },
 
+    /**
+     * Busca os posts de um usuário do banco de dados local.
+     * Deve ser precedido por `syncUserPosts` para garantir que os dados estejam atualizados.
+     */
     getUserPosts(authorId: string): Post[] {
         return db.posts.getAll()
             .filter(p => p.authorId === authorId)

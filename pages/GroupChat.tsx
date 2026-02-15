@@ -15,7 +15,7 @@ import { ChatInput } from '../components/chat/ChatInput';
 import { MessageItem } from '../components/chat/MessageItem';
 import { MediaPreviewOverlay } from '../components/chat/MediaPreviewOverlay';
 import { GroupMenuModal } from '../components/groups/menu/GroupMenuModal';
-import { useAccessValidationFlow } from '../flows/groups/AccessValidationFlow';
+import { useAccessValidationFlow } from '../flows/groups/AccessValidationFlow.tsx';
 
 export const GroupChat: React.FC = () => {
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ export const GroupChat: React.FC = () => {
   const { validateGroupAccess } = useAccessValidationFlow();
   
   const [group, setGroup] = useState<Group | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // 1. Adicionado estado de loading
   const [activeChannelId, setActiveChannelId] = useState<string>(channelId || 'general');
   
   const [isCreator, setIsCreator] = useState(false);
@@ -70,21 +71,30 @@ export const GroupChat: React.FC = () => {
   }, [currentChatId, currentUserEmail]);
 
   useEffect(() => {
-      if (id) {
-          const hasAccess = validateGroupAccess(id);
-          if (!hasAccess) return;
-          const loadedGroup = groupService.getGroupById(id);
-          if (loadedGroup) {
-              setGroup(loadedGroup);
-              const isOwner = loadedGroup.creatorId === currentUserId;
-              const isAdm = isOwner || (currentUserId && loadedGroup.adminIds?.includes(currentUserId));
-              setIsCreator(isOwner);
-              setIsAdmin(!!isAdm);
-              loadMessages();
-              chatService.markChatAsRead(currentChatId);
-          }
-      }
-  }, [id, activeChannelId, currentChatId, loadMessages]);
+    if (id) {
+        const hasAccess = validateGroupAccess(id);
+        if (!hasAccess) {
+            // O redirecionamento já acontece no flow, apenas paramos a execução aqui.
+            return;
+        }
+
+        const loadedGroup = groupService.getGroupById(id);
+        if (loadedGroup) {
+            setGroup(loadedGroup);
+            const isOwner = loadedGroup.creatorId === currentUserId;
+            const isAdm = isOwner || (currentUserId && loadedGroup.adminIds?.includes(currentUserId));
+            setIsCreator(isOwner);
+            setIsAdmin(!!isAdm);
+            loadMessages();
+            chatService.markChatAsRead(currentChatId);
+            setIsLoading(false); // 2. Desativa o loading APÓS carregar os dados
+        } else {
+            // Se o grupo não for encontrado, redireciona para a home de grupos
+            navigate('/groups');
+        }
+    }
+  }, [id, activeChannelId, currentChatId, loadMessages, navigate, validateGroupAccess, currentUserId]);
+
 
   useEffect(() => {
       const unsub = db.subscribe('chats', loadMessages);
@@ -140,6 +150,11 @@ export const GroupChat: React.FC = () => {
       if (activeChannelId === 'general') return 'Geral';
       return group?.channels?.find(c => c.id === activeChannelId)?.name || 'Tópico';
   }, [group, activeChannelId]);
+
+  // 3. Adicionado Renderização Nula ou de Carregamento
+  if (isLoading) {
+      return null; // Ou <LoadingSpinner /> para um feedback visual melhor
+  }
 
   return (
     <div className={`h-[100dvh] flex flex-col overflow-hidden ${group?.isVip ? 'secure-content' : ''}`} style={{ background: 'radial-gradient(circle at top left, #0c0f14, #0a0c10)', color: '#fff' }}>

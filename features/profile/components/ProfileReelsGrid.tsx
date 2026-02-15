@@ -10,7 +10,7 @@ export const ProfileReelsGrid: React.FC = () => {
         return <div className="text-center text-gray-400 mt-8">Usuário não encontrado.</div>;
     }
 
-    const posts = postService.getPostsByAuthor(currentUser.id);
+    const posts = postService.getUserPosts(currentUser.id);
 
     if (posts.length === 0) {
         return <div className="text-center text-gray-400 mt-8">Sem reels para mostrar.</div>;

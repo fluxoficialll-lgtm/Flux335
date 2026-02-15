@@ -1,7 +1,15 @@
 
 import { query } from '../pool.js';
 
-const toUuid = (val) => (val === "" || val === "undefined" || val === "null") ? null : val;
+// Regex para validar um formato de UUID.
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// A função toUuid agora valida o formato do UUID antes de retorná-lo.
+const toUuid = (val) => {
+    if (!val || typeof val !== 'string') return null;
+    const cleanedVal = val.trim();
+    return UUID_REGEX.test(cleanedVal) ? cleanedVal : null;
+};
 
 // Esta função agora extrai os metadados da coluna 'data' JSONB.
 const mapRowToUser = (row) => {
@@ -80,7 +88,6 @@ export const UserRepository = {
             values.push(is_profile_completed);
         }
         
-        // Os dados restantes são agrupados no JSONB.
         columns.push('data');
         values.push(JSON.stringify(data));
 
@@ -94,7 +101,6 @@ export const UserRepository = {
         return res.rows[0].id;
     },
 
-    // A função de atualização agora usa a coluna 'data' corretamente.
     async update(user) {
         const { id, handle, is_profile_completed, ...data } = user;
         const uuid = toUuid(id);

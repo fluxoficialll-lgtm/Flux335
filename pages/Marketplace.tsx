@@ -39,8 +39,8 @@ export const Marketplace: React.FC = () => {
   }, [loadItems]);
 
   const filteredProducts = useMemo(() => {
-      if (!allItems) return [];
-      let result = [...allItems];
+      const products = Array.isArray(allItems) ? allItems : [];
+      let result = [...products];
       
       if (activeCategory !== 'Todos') {
           if (activeCategory === 'Destaque') result = result.filter(p => p && p.isAd);

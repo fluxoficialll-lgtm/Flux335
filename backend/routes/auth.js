@@ -1,57 +1,54 @@
 
 import express from 'express';
-import { passwordAuthService } from '../services/passwordAuthService.js';
-import { googleAuthService } from '../services/googleAuthService.js';
-import { googleAuthConfig } from '../authConfig.js';
+import jwt from 'jsonwebtoken';
 import { dbManager } from '../databaseManager.js';
-import crypto from 'crypto';
 
 const router = express.Router();
 
-router.get('/config', (req, res) => {
-    res.json({ clientId: googleAuthConfig.clientId });
-});
+// Unificado o JWT_SECRET para garantir consistência entre emissão e validação.
+const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
-router.post('/register', async (req, res) => {
-    try {
-        const user = await passwordAuthService.registerUser(req.body);
-        res.json({ success: true, user });
-    } catch (e) {
-        console.error("Register Error:", e.message);
-        res.status(500).json({ error: e.message });
+// Rota de callback para autenticação com Google
+router.post('/google/callback', async (req, res) => {
+    const { profile } = req.body; // Recebe o perfil do Google do frontend
+
+    if (!profile) {
+        return res.status(400).json({ message: "Perfil do Google não fornecido." });
     }
-});
 
-router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const user = await dbManager.users.findByEmail(email);
+        let user = await dbManager.users.findByEmail(profile.email);
 
-        // TODO: Implementar a verificação de hash da senha
-        if (user && user.password_hash) { // Verificar se o hash existe
-            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-            const ua = req.headers['user-agent'];
-            await dbManager.admin.recordIp(user.id, ip, ua);
-            res.json({ user, token: 'session_' + crypto.randomUUID() });
-        } else {
-            res.status(401).json({ error: 'Credenciais inválidas' });
+        if (!user) {
+            // Cria um novo usuário se ele não existir
+            user = await dbManager.users.create({
+                email: profile.email,
+                name: profile.name,
+                profile: {
+                    photoUrl: profile.picture,
+                    name: profile.name,
+                    nickname: profile.given_name,
+                }
+            });
         }
-    } catch (e) { res.status(500).json({ error: e.message }); }
-});
 
-router.post('/google', async (req, res) => {
-    try {
-        const { googleToken } = req.body;
-        const { user, isNew } = await googleAuthService.authenticate(googleToken);
-        
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-        const ua = req.headers['user-agent'];
-        await dbManager.admin.recordIp(user.id, ip, ua);
+        // Gera o token JWT com o ID do usuário
+        const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
-        res.json({ user, token: 'g_session_' + crypto.randomUUID(), isNew });
-    } catch (e) {
-        console.error("Google Auth Error:", e.message);
-        res.status(500).json({ error: "Erro na autenticação." });
+        // Retorna o token e os dados do usuário para o cliente
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                profile: user.profile
+            }
+        });
+
+    } catch (error) {
+        console.error("Erro durante o callback do Google:", error);
+        res.status(500).json({ message: "Erro interno no servidor ao processar login do Google." });
     }
 });
 

@@ -1,63 +1,84 @@
+
 import express from 'express';
+import { dbManager } from '../databaseManager.js';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
-/**
- * @route   POST /api/users/update-location
- * @desc    Atualiza a localização geográfica do usuário logado.
- * @access  Private
- */
-router.post('/update-location', async (req, res) => {
+// CORREÇÃO FINAL: Unifica o segredo do JWT com o resto da aplicação.
+const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+
+// Rota para registrar um novo usuário com e-mail e senha
+router.post('/register', async (req, res) => {
+    const { email, password, name, nickname } = req.body;
+
+    if (!email || !password || !name || !nickname) {
+        return res.status(400).json({ error: 'Todos os campos são obrigatórios: email, senha, nome e apelido.' });
+    }
+
     try {
-        const userId = req.userId;
-        if (!userId) {
-            return res.status(401).json({ error: 'Usuário não autenticado.' });
+        const existingUser = await dbManager.users.findByEmail(email);
+        if (existingUser) {
+            return res.status(409).json({ error: 'O e-mail fornecido já está em uso.' });
         }
 
-        const { latitude, longitude } = req.body;
-        if (latitude === undefined || longitude === undefined) {
-            return res.status(400).json({ error: 'Latitude e longitude são obrigatórias.' });
-        }
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        await req.hub.users.updateLocation(userId, latitude, longitude);
+        const newUser = await dbManager.users.create({
+            email,
+            password: hashedPassword,
+            name,
+            profile: { name, nickname }
+        });
 
-        res.json({ success: true, message: 'Localização atualizada com sucesso.' });
+        res.status(201).json({
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email
+        });
 
     } catch (error) {
-        console.error('[API] Erro ao atualizar localização:', error);
-        res.status(500).json({ error: 'Falha ao atualizar a localização.' });
+        console.error("Erro no registro de usuário:", error);
+        res.status(500).json({ error: 'Erro interno do servidor ao registrar o usuário.' });
     }
 });
 
-/**
- * @route   GET /api/users/nearby
- * @desc    Encontra usuários próximos a um determinado ponto geográfico.
- * @access  Public (ou Private, dependendo da regra de negócio)
- */
-router.get('/nearby', async (req, res) => {
+// Rota de login para usuários com e-mail e senha
+router.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
+    }
+
     try {
-        const { lat, lon, radius } = req.query;
-
-        const latitude = parseFloat(lat);
-        const longitude = parseFloat(lon);
-        const radiusInMeters = radius ? parseInt(radius) : 50000; // Raio de 50km por padrão
-
-        if (isNaN(latitude) || isNaN(longitude)) {
-            return res.status(400).json({ error: 'Parâmetros de latitude e longitude inválidos.' });
+        const user = await dbManager.users.findByEmail(email);
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado.' });
         }
 
-        const users = await req.hub.users.findNearby(latitude, longitude, radiusInMeters);
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Credenciais inválidas.' });
+        }
 
-        res.json(users);
+        // Gera o token usando o segredo correto e o payload correto ({ id: ... })
+        const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
+
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                profile: user.profile
+            }
+        });
 
     } catch (error) {
-        console.error('[API] Erro ao buscar usuários próximos:', error);
-        res.status(500).json({ error: 'Falha ao buscar usuários próximos.' });
+        console.error("Erro no login:", error);
+        res.status(500).json({ error: 'Erro interno do servidor.' });
     }
-});
-
-router.get('/update', async (req, res) => {
-    res.json({ success: true, message: 'Endpoint GET /api/users/update atingido.' });
 });
 
 export default router;

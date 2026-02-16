@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { trackingService } from '../services/trackingService';
-import { API_BASE } from '../apiConfig';
 import { LoginInitialCard } from '../features/auth/components/LoginInitialCard';
 import { LoginEmailCard } from '../features/auth/components/LoginEmailCard';
 
@@ -16,7 +15,6 @@ export const Login: React.FC = () => {
     const [googleAuthProcessing, setGoogleAuthProcessing] = useState(false);
     const [error, setError] = useState('');
     
-    // State for Email/Password
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showEmailForm, setShowEmailForm] = useState(false);
@@ -90,20 +88,19 @@ export const Login: React.FC = () => {
     };
 
     useEffect(() => {
-        if (showEmailForm || typeof google === 'undefined' || !document.getElementById(GOOGLE_BTN_ID)) {
+        if (showEmailForm || typeof google === 'undefined' || !document.getElementById(GOOGLE_BTN_ID) || buttonRendered.current) {
             return;
         }
 
-        const initializeGoogleSignIn = async () => {
+        const initializeGoogleSignIn = () => {
             try {
-                const googleClientId = await authService.getGoogleClientId();
+                // @ts-ignore
+                const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
                 if (!googleClientId) {
-                    console.error("Google Client ID not found");
+                    console.error("VITE_GOOGLE_CLIENT_ID is not defined in .env file");
                     setError("A autenticação Google não está configurada corretamente.");
                     return;
                 }
-
-                if (buttonRendered.current) return;
                 
                 google.accounts.id.initialize({
                     client_id: googleClientId,
@@ -158,6 +155,10 @@ export const Login: React.FC = () => {
                     />
                 )}
                 
+                {error && !googleAuthProcessing && (
+                     <p className="text-red-400 text-xs text-center mt-4 max-w-full break-words">{error}</p>
+                )}
+
                 {googleAuthProcessing && (
                     <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-[32px] flex items-center justify-center z-50">
                         <i className="fa-solid fa-circle-notch fa-spin text-[#00c2ff] text-2xl"></i>

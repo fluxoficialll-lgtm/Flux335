@@ -27,7 +27,7 @@ import screensRoutes from './routes/screens.js';
 import socialRoutes from './routes/social.js';
 import trackingRoutes from './routes/tracking.js';
 import usersRoutes from './routes/users.js';
-import { adminDispatcher } from './routes/admin/dispatcher.js';
+import adminRoutes from './routes/admin.js';
 
 const router = express.Router();
 
@@ -62,6 +62,6 @@ router.use('/screens', screensRoutes);
 router.use('/social', socialRoutes);
 router.use('/tracking', trackingRoutes);
 router.use('/users', usersRoutes);
-router.use('/admin', adminDispatcher);
+router.use('/admin', adminRoutes);
 
 export default router;

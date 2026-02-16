@@ -7,8 +7,18 @@ import { ProfileManager } from './auth/ProfileManager';
 import { PreferenceManager } from './auth/PreferenceManager';
 import { trackingService } from './trackingService';
 import { db } from '../../database';
+import axios from 'axios';
 
 export const authService = {
+  getGoogleClientId: async () => {
+      try {
+          const response = await axios.get('/api/auth/config/google-client-id');
+          return response.data.clientId;
+      } catch (error) {
+          console.error("Error fetching Google Client ID:", error);
+          return null;
+      }
+  },
   isValidEmail: (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
   isAuthenticated: () => !!localStorage.getItem('auth_token') && !!localStorage.getItem('cached_user_profile'),
 

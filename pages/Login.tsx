@@ -92,12 +92,11 @@ export const Login: React.FC = () => {
             return;
         }
 
-        const initializeGoogleSignIn = () => {
+        const initializeGoogleSignIn = async () => {
             try {
-                // @ts-ignore
-                const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+                const googleClientId = await authService.getGoogleClientId();
                 if (!googleClientId) {
-                    console.error("VITE_GOOGLE_CLIENT_ID is not defined in .env file");
+                    console.error("Google Client ID not found");
                     setError("A autenticação Google não está configurada corretamente.");
                     return;
                 }

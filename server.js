@@ -41,7 +41,7 @@ app.use(hpp());
 
 // CORS - agora usa a configuração do config.js
 const corsOptions = {
-    origin: config.CORS_ORIGIN,
+    origin: config.ALLOWED_ORIGINS,
     optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
